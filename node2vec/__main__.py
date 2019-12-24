@@ -12,7 +12,7 @@ Knowledge Discovery and Data Mining (KDD), 2016
 import argparse
 import numpy as np
 import networkx as nx
-import node2vec
+from . import node2vec
 from gensim.models import Word2Vec
 
 def parse_args():
@@ -63,7 +63,7 @@ def parse_args():
 
 	return parser.parse_args()
 
-def read_graph():
+def read_graph(args):
 	'''
 	Reads the input network in networkx.
 	'''
@@ -79,26 +79,26 @@ def read_graph():
 
 	return G
 
-def learn_embeddings(walks):
+def learn_embeddings(args, walks):
 	'''
 	Learn embeddings by optimizing the Skipgram objective using SGD.
 	'''
-	walks = [map(str, walk) for walk in walks]
+	walks = [list(map(str, walk)) for walk in walks]
 	model = Word2Vec(walks, size=args.dimensions, window=args.window_size, min_count=0, sg=1, workers=args.workers, iter=args.iter)
-	model.save_word2vec_format(args.output)
+	model.wv.save_word2vec_format(args.output)
 	
 	return
 
-def main(args):
+def main():
 	'''
 	Pipeline for representational learning for all nodes in a graph.
 	'''
-	nx_G = read_graph()
+	args = parse_args()
+	nx_G = read_graph(args)
 	G = node2vec.Graph(nx_G, args.directed, args.p, args.q)
 	G.preprocess_transition_probs()
 	walks = G.simulate_walks(args.num_walks, args.walk_length)
-	learn_embeddings(walks)
+	learn_embeddings(args, walks)
 
 if __name__ == "__main__":
-	args = parse_args()
-	main(args)
+	main()
